@@ -1,7 +1,6 @@
 #include <stdio.h>
 
-#include "../include/handler.h"
-#include "../include/mapper.h"
+#include "include/mapper.h"
 
 int main(int argc, char *argv[])
 {
@@ -17,6 +16,10 @@ int main(int argc, char *argv[])
     }
 
     puts("File is of ELF format");
+    puts("-- Starting parsing sequence of program headers");
+
+    parse_elf_symbols(f);
+
     file_unmap(&f);
     return 0;
 }

@@ -4,7 +4,7 @@ DFLAGS=-g -fsanitize=address
 
 SRC=src/handler.c src/mapper.c src/main.c
 BIN=my_nm
-TRASH=*.txt
+TRASH=*.txt *.o
 all:
 	$(CC) $(CFLAGS) $(SRC) -o $(BIN)
 

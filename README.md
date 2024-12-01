@@ -5,17 +5,20 @@
 ## PROJECT STRUCTURE
 
 ### Tree
-├── my_nm
+├── Makefile
+├── src
 │   ├── handler.c
-│   ├── handler.h
-│   ├── Makefile
-│   └── test.c
-├── README.md
-└── TODO.md
-### Structure
+│   ├── include
+│   │   ├── handler.h
+│   │   └── mapper.h
+│   ├── main.c
+│   └── mapper.c
+└── test
+    ├── example.c
+    ├── example.o
+    └── test.c
 
-**my_nm**
-handler.c: mapping of a file passed as parameter to a file struct defined in handler.h. Adds characteristics such as size, name, fd, and if it is an ELF file.
+### Structure
 
 ## Section
 

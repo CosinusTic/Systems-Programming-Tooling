@@ -1,4 +1,4 @@
-#include "../include/mapper.h"
+#include "include/mapper.h"
 
 #include <elf.h>
 #include <fcntl.h>
@@ -83,4 +83,109 @@ void file_unmap(struct file **f)
     munmap((*f)->content, (*f)->size);
     free(*f);
     *f = NULL;
+}
+
+const char *map_symvis(unsigned char vis)
+{
+    switch (vis)
+    {
+    case STV_DEFAULT:
+        return "STV_DEFAULT";
+    case STV_INTERNAL:
+        return "STV_INTERNAL";
+    case STV_HIDDEN:
+        return "STV_HIDDEN";
+    case STV_PROTECTED:
+        return "STV_PROTECTED";
+    default:
+        return "UNKNOWN";
+    }
+}
+
+const char *map_symtype(unsigned char type) // Map a
+{
+    switch (type)
+    {
+    case STT_NOTYPE:
+        return "STT_NOTYPE";
+    case STT_OBJECT:
+        return "STT_OBJECT";
+    case STT_FUNC:
+        return "STT_FUNC";
+    case STT_SECTION:
+        return "STT_SECTION";
+    case STT_FILE:
+        return "STT_FILE";
+    default:
+        return "UNKNOWN";
+    }
+}
+
+const char *map_symbinding(unsigned char bind)
+{
+    switch (bind)
+    {
+    case STB_LOCAL:
+        return "STB_LOCAL";
+    case STB_GLOBAL:
+        return "STB_GLOBAL";
+    case STB_WEAK:
+        return "STB_WEAK";
+    default:
+        return "UNKNOWN";
+    }
+}
+
+void parse_elf_symbols(const struct file *f)
+{
+    char *fptr = (char *)f->content;
+    Elf64_Ehdr *elf_hdr = (Elf64_Ehdr *)fptr;
+    Elf64_Shdr *section_headers =
+        (Elf64_Shdr *)(fptr + elf_hdr->e_shoff); // meta data of sections
+    const char *shstrtab = (const char *)(fptr
+                                          + section_headers[elf_hdr->e_shstrndx]
+                                                .sh_offset); // Section names
+
+    Elf64_Shdr *symtab = NULL;
+    Elf64_Shdr *strtab = NULL;
+
+    for (int i = 0; i < elf_hdr->e_shnum; i++)
+    {
+        const char *section_name = shstrtab + section_headers[i].sh_name;
+        if (strcmp(section_name, ".symtab") == 0)
+            symtab = &section_headers[i];
+        else if (strcmp(section_name, ".strtab") == 0)
+            strtab = &section_headers[i];
+    }
+
+    if (!symtab || !strtab)
+        return;
+
+    Elf64_Sym *symbols = (Elf64_Sym *)(fptr + symtab->sh_offset);
+    const char *string_table = fptr + strtab->sh_offset;
+    int sym_amt = symtab->sh_size / symtab->sh_entsize;
+
+    for (int i = 0; i < sym_amt; i++)
+    {
+        Elf64_Sym *sym = &(symbols[i]);
+        const char *sym_name = &string_table[sym->st_name];
+
+        const char *section_name = "UND";
+        if (sym->st_shndx == SHN_UNDEF)
+        {
+            section_name = "UND";
+        }
+        else if (sym->st_shndx < SHN_LORESERVE) // Valid section index
+        {
+            section_name = shstrtab + section_headers[sym->st_shndx].sh_name;
+        }
+
+        const char *vis = map_symvis(ELF64_ST_VISIBILITY(sym->st_other));
+        printf("%016lx\t%lu\t%-12s\t%-12s\t%-12s\t%s\t%s\n", sym->st_value,
+               sym->st_size, map_symtype(ELF64_ST_TYPE(sym->st_info)),
+               map_symbinding(ELF64_ST_BIND(sym->st_info)), vis, section_name,
+               sym_name);
+        if (strlen(sym_name) == 0)
+            continue;
+    }
 }
