@@ -1,5 +1,6 @@
-#include "handler.h"
+#include "../include/mapper.h"
 
+#include <elf.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,22 +9,22 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-/*
-struct file
+static int is_elf(const struct file *f)
 {
-    int fd;
-    size_t size;
-    char *name;
-    void *content;
-};
-*/
+    Elf64_Ehdr *fheaders = (Elf64_Ehdr *)f->content;
+    return (fheaders->e_ident[EI_MAG0] == 0x7f
+            && fheaders->e_ident[EI_MAG1] == 'E'
+            && fheaders->e_ident[EI_MAG2] == 'L'
+            && fheaders->e_ident[EI_MAG3] == 'F')
+        ? 1
+        : 0;
+}
 
 struct file *file_map(const char *filename)
 {
     struct stat s = { 0 };
     struct file *new = malloc(sizeof(struct file));
-    ssize_t bytes_read = 0;
-    char magic[4];
+
     if (new == NULL)
     {
         perror("Cannot malloc a struct file");
@@ -58,20 +59,12 @@ struct file *file_map(const char *filename)
         goto error_mmap;
     }
 
-    if ((bytes_read = read(new->fd, magic, 4)) == -1)
-    {
-        perror("Failed to read the magic bytes");
-        goto error_read;
-    }
-
-    new->is_elf = magic[0] == 0x7f && magic[1] == 'E' && magic[2] == 'L'
-            && magic[3] == 'F'
-        ? 1
-        : 0;
+    if (!is_elf(new))
+        goto error_format;
 
     return new;
 
-error_read:
+error_format:
 error_mmap:
 error_stat:
     close(new->fd);
@@ -90,23 +83,4 @@ void file_unmap(struct file **f)
     munmap((*f)->content, (*f)->size);
     free(*f);
     *f = NULL;
-}
-
-int main(int argc, char *argv[])
-{
-    if (argc < 2)
-        return 1;
-
-    struct file *f = file_map(argv[1]);
-
-    if (!f)
-        return 1;
-
-    char *message;
-
-    message = f->is_elf == 1 ? "File is an ELF" : "File is not an ELF";
-
-    printf("Outcome: %s\n", message);
-
-    return 0;
 }
