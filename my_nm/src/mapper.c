@@ -9,6 +9,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "include/symbols.h"
+
 static int is_elf(const struct file *f)
 {
     Elf64_Ehdr *fheaders = (Elf64_Ehdr *)f->content;
@@ -85,7 +87,7 @@ void file_unmap(struct file **f)
     *f = NULL;
 }
 
-const char *map_symvis(unsigned char vis)
+char *map_symvis(unsigned char vis)
 {
     switch (vis)
     {
@@ -102,7 +104,7 @@ const char *map_symvis(unsigned char vis)
     }
 }
 
-const char *map_symtype(unsigned char type) // Map a
+char *map_symtype(unsigned char type) // Map a
 {
     switch (type)
     {
@@ -121,7 +123,7 @@ const char *map_symtype(unsigned char type) // Map a
     }
 }
 
-const char *map_symbinding(unsigned char bind)
+char *map_symbinding(unsigned char bind)
 {
     switch (bind)
     {
@@ -164,28 +166,51 @@ void parse_elf_symbols(const struct file *f)
     Elf64_Sym *symbols = (Elf64_Sym *)(fptr + symtab->sh_offset);
     const char *string_table = fptr + strtab->sh_offset;
     int sym_amt = symtab->sh_size / symtab->sh_entsize;
+    struct sym_llist *symbol_llist = NULL;
 
     for (int i = 0; i < sym_amt; i++)
     {
         Elf64_Sym *sym = &(symbols[i]);
-        const char *sym_name = &string_table[sym->st_name];
+        char *sym_name = (char *)&string_table[sym->st_name];
 
-        const char *section_name = "UND";
+        if (strlen(sym_name) == 0)
+            continue;
+        char *section_name = "UND";
         if (sym->st_shndx == SHN_UNDEF)
-        {
             section_name = "UND";
-        }
         else if (sym->st_shndx < SHN_LORESERVE) // Valid section index
+            section_name =
+                (char *)shstrtab + section_headers[sym->st_shndx].sh_name;
+
+        struct sym_data *symbol_data = malloc(sizeof(struct sym_data));
+        if (!symbol_data)
         {
-            section_name = shstrtab + section_headers[sym->st_shndx].sh_name;
+            free_list(symbol_llist);
+            return;
+        }
+        symbol_data->value = sym->st_value;
+        symbol_data->size = sym->st_size;
+        symbol_data->type = map_symtype(ELF64_ST_TYPE(sym->st_info));
+        symbol_data->binding = map_symbinding(ELF64_ST_BIND(sym->st_info));
+        symbol_data->visibility =
+            map_symvis(ELF64_ST_VISIBILITY(sym->st_other));
+        symbol_data->section_name = section_name;
+        symbol_data->symbol_name = sym_name;
+
+        struct sym_llist *node = create_node(symbol_data);
+        if (!node)
+        {
+            free_list(symbol_llist);
+            return;
         }
 
+        insert_node(&symbol_llist, node);
+
+        // Part where we print, to be removed
         const char *vis = map_symvis(ELF64_ST_VISIBILITY(sym->st_other));
         printf("%016lx\t%lu\t%-12s\t%-12s\t%-12s\t%s\t%s\n", sym->st_value,
                sym->st_size, map_symtype(ELF64_ST_TYPE(sym->st_info)),
                map_symbinding(ELF64_ST_BIND(sym->st_info)), vis, section_name,
                sym_name);
-        if (strlen(sym_name) == 0)
-            continue;
     }
 }
