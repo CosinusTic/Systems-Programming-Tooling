@@ -32,23 +32,14 @@ void insert_node(struct sym_llist **head, struct sym_llist *new_node)
 
 void free_list(struct sym_llist *head)
 {
-    if (!head)
-        return;
-
     struct sym_llist *current = head;
-
     while (current)
     {
-        free(current->data->type);
-        free(current->data->binding);
-        free(current->data->visibility);
-        free(current->data->section_name);
-        free(current->data->symbol_name);
+        struct sym_llist *next = current->next;
         free(current->data);
-        current = current->next;
+        free(current);
+        current = next;
     }
-
-    free(head);
 }
 
 static void print_symbol(struct sym_data *data)
@@ -71,14 +62,10 @@ static void print_symbol(struct sym_data *data)
 
 void sym_llist_traversal(struct sym_llist *head)
 {
-    if (!head)
-        return;
-
     struct sym_llist *current = head;
-    print_symbol(head->data);
-    while (current->next)
+    while (current)
     {
-        print_symbol(current->next->data);
+        print_symbol(current->data);
         current = current->next;
     }
 }

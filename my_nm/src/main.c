@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include "include/mapper.h"
+#include "include/symbols.h"
 
 int main(int argc, char *argv[])
 {
@@ -18,8 +19,10 @@ int main(int argc, char *argv[])
     puts("File is of ELF format");
     puts("-- Starting parsing sequence of program headers");
 
-    parse_elf_symbols(f);
+    struct sym_llist *symlist = parse_elf_symbols(f);
+    sym_llist_traversal(symlist);
 
+    free_list(symlist);
     file_unmap(&f);
     return 0;
 }

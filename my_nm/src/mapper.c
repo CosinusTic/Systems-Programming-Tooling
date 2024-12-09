@@ -138,7 +138,7 @@ char *map_symbinding(unsigned char bind)
     }
 }
 
-void parse_elf_symbols(const struct file *f)
+struct sym_llist *parse_elf_symbols(const struct file *f)
 {
     char *fptr = (char *)f->content;
     Elf64_Ehdr *elf_hdr = (Elf64_Ehdr *)fptr;
@@ -161,7 +161,7 @@ void parse_elf_symbols(const struct file *f)
     }
 
     if (!symtab || !strtab)
-        return;
+        return NULL;
 
     Elf64_Sym *symbols = (Elf64_Sym *)(fptr + symtab->sh_offset);
     const char *string_table = fptr + strtab->sh_offset;
@@ -173,8 +173,9 @@ void parse_elf_symbols(const struct file *f)
         Elf64_Sym *sym = &(symbols[i]);
         char *sym_name = (char *)&string_table[sym->st_name];
 
-        if (strlen(sym_name) == 0)
+        if (ELF64_ST_TYPE(sym->st_info) == STT_FILE)
             continue;
+
         char *section_name = "UND";
         if (sym->st_shndx == SHN_UNDEF)
             section_name = "UND";
@@ -186,7 +187,7 @@ void parse_elf_symbols(const struct file *f)
         if (!symbol_data)
         {
             free_list(symbol_llist);
-            return;
+            return NULL;
         }
         symbol_data->value = sym->st_value;
         symbol_data->size = sym->st_size;
@@ -201,16 +202,11 @@ void parse_elf_symbols(const struct file *f)
         if (!node)
         {
             free_list(symbol_llist);
-            return;
+            return NULL;
         }
 
         insert_node(&symbol_llist, node);
-
-        // Part where we print, to be removed
-        const char *vis = map_symvis(ELF64_ST_VISIBILITY(sym->st_other));
-        printf("%016lx\t%lu\t%-12s\t%-12s\t%-12s\t%s\t%s\n", sym->st_value,
-               sym->st_size, map_symtype(ELF64_ST_TYPE(sym->st_info)),
-               map_symbinding(ELF64_ST_BIND(sym->st_info)), vis, section_name,
-               sym_name);
     }
+
+    return symbol_llist;
 }
