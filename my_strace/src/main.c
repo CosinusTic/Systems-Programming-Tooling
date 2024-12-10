@@ -39,14 +39,18 @@ int main(int argc, char *argv[], char *envp[])
         if (WIFEXITED(status)) // Exit from child program
         {
             int stat = WEXITSTATUS(status);
-            printf("Program terminated with exit code %d\n", stat);
+            printf("Program exited with code %d\n", stat);
             break;
         }
 
         pt = ptrace(PTRACE_PEEKUSER, pid, 8 * ORIG_RAX, NULL);
         ptrace(PTRACE_GETREGS, pid, NULL, &regs);
-        printf("syscall: %ld: %s\nrdi: %lld\nrsi: %lld\nrdx: %lld\n\n", pt,
-               syscallnames[pt], regs.rdi, regs.rsi, regs.rdx);
+        /*
+            printf("syscall: %ld: %s\nrdi: %lld\nrsi: %lld\nrdx: %lld\n, return
+           " "value: (rax): %lld)\n", pt, syscalls[pt], regs.rdi, regs.rsi,
+           regs.rdx, regs.rax);
+        */
+        printf("%s() = %lld\n", syscalls[pt], regs.rax);
 
         ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
     }
