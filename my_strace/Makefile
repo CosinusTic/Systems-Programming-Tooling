@@ -2,7 +2,7 @@ CC=cc
 CFLAGS=-std=c99 -pedantic -Wall -Wextra -Wvla -Werror
 DFLAGS=-g -fsanitize=address
 
-SRC=src/main.c src/syscalls.c
+SRC=src/main.c src/syscalls.c src/handler.c
 BIN=my_strace
 TRASH=*.txt *.o
 all:
