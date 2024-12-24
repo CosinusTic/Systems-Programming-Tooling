@@ -1,12 +1,80 @@
+#include <asm/unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/ptrace.h>
 #include <sys/reg.h>
 #include <sys/syscall.h>
 #include <sys/user.h>
 #include <sys/wait.h>
 #include <unistd.h>
-
+// #include "/usr/include/x86_64-linux-gnu/asm/unistd_64.h"
 #include "include/syscalls.h"
+
+void read_strmem(pid_t child, unsigned long addr, char *buffer, size_t max_len)
+{
+    long data;
+    size_t i = 0;
+
+    while (i < max_len)
+    {
+        data = ptrace(PTRACE_PEEKDATA, child, addr + i, NULL);
+
+        if (data == -1)
+            break;
+        memcpy(buffer + i, &data, sizeof(data));
+
+        // Check for the null terminator
+        if (memchr(&data, '\0', sizeof(data)) != NULL)
+        {
+            break;
+        }
+
+        i += sizeof(data);
+    }
+}
+
+void handle_open(struct user_regs_struct *regs, pid_t pid)
+{
+    char path[256] = { 0 };
+    read_strmem(pid, regs->rdi, path, sizeof(path));
+    printf("open(pathname=\"%s\", flags=0x%llx, mode=0%llo)\n", path, regs->rsi,
+           regs->rdx);
+}
+
+void handle_close(struct user_regs_struct *regs)
+{
+    printf("close(fd = %llu)", regs->rdi);
+}
+
+void handle_syscalls(struct user_regs_struct *regs, pid_t pid)
+{
+    switch (regs->orig_rax)
+    {
+    case __NR_open:
+        puts("OPEN!!!");
+        handle_open(regs, pid);
+        break;
+    case __NR_close:
+        handle_close(regs);
+        break;
+    case __NR_openat:
+        puts("open at!=================");
+        break;
+    default:
+        break;
+    }
+}
+
+char *get_syscalls(struct user_regs_struct *regs)
+{
+    puts("------- Open case -------");
+    static char buf[128];
+    snprintf(buf, sizeof(buf), "arg1=0x%llx, arg2=0x%llx, arg3=0x%llx",
+             regs->rdi, regs->rsi, regs->rdx);
+
+    return buf;
+}
 
 int main(int argc, char *argv[], char *envp[])
 {
@@ -42,16 +110,18 @@ int main(int argc, char *argv[], char *envp[])
             printf("Program exited with code %d\n", stat);
             break;
         }
-
         pt = ptrace(PTRACE_PEEKUSER, pid, 8 * ORIG_RAX, NULL);
         ptrace(PTRACE_GETREGS, pid, NULL, &regs);
+        /*char *syscall_args = get_syscalls(&regs);
+        printf("args: %s\n", syscall_args);
+        */
         /*
             printf("syscall: %ld: %s\nrdi: %lld\nrsi: %lld\nrdx: %lld\n, return
            " "value: (rax): %lld)\n", pt, syscalls[pt], regs.rdi, regs.rsi,
            regs.rdx, regs.rax);
         */
         printf("%s() = %lld\n", syscalls[pt], regs.rax);
-
+        handle_syscalls(&regs, pid);
         ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
     }
 
