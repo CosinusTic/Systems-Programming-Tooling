@@ -15,5 +15,7 @@
 void handle_open(struct user_regs_struct *regs, pid_t pid);
 void handle_close(struct user_regs_struct *regs);
 void handle_write(struct user_regs_struct *regs);
+void handle_read(struct user_regs_struct *regs);
+void handle_pread(struct user_regs_struct *regs);
 
 #endif /* !HANDLER_H */

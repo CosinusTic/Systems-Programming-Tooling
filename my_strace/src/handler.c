@@ -62,6 +62,26 @@ void handle_close(struct user_regs_struct *regs)
     printf("close(fd=%llu)", regs->rdi);
 }
 
+void handle_read(struct user_regs_struct *regs)
+{
+    int fd = regs->rdi;
+    unsigned long long buf = regs->rsi;
+    size_t cnt = regs->rdx;
+
+    printf("write(fd=%d, buf=0x%llx, cnt=%lu)", fd, buf, cnt);
+}
+
+void handle_pread(struct user_regs_struct *regs)
+{
+    int fd = regs->rdi;
+    unsigned long long buf = regs->rsi;
+    size_t nbytes = regs->rdx;
+    off_t offset = regs->r10;
+
+    printf("pread(fd=%d, buf=0x%llx, nbytes=%lu, offset=%lu)", fd, buf, nbytes,
+           offset);
+}
+
 void handle_write(struct user_regs_struct *regs)
 {
     int fd = regs->rdi;

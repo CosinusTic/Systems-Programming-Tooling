@@ -1,4 +1,5 @@
 #include <asm/unistd.h>
+#include <asm/unistd_64.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -61,6 +62,12 @@ int handle_syscalls(struct user_regs_struct *regs, pid_t pid)
         return 1;
     case __NR_write:
         handle_write(regs);
+        return 1;
+    case __NR_read:
+        handle_read(regs);
+        return 1;
+    case __NR_pread64:
+        handle_pread(regs);
         return 1;
     case __NR_openat:
         puts("open at!=================");
