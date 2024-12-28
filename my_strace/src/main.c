@@ -77,16 +77,6 @@ int handle_syscalls(struct user_regs_struct *regs, pid_t pid)
     }
 }
 
-char *get_syscalls(struct user_regs_struct *regs)
-{
-    puts("------- Open case -------");
-    static char buf[128];
-    snprintf(buf, sizeof(buf), "arg1=0x%llx, arg2=0x%llx, arg3=0x%llx",
-             regs->rdi, regs->rsi, regs->rdx);
-
-    return buf;
-}
-
 int main(int argc, char *argv[], char *envp[])
 {
     if (argc != 2)
@@ -123,9 +113,6 @@ int main(int argc, char *argv[], char *envp[])
         }
         pt = ptrace(PTRACE_PEEKUSER, pid, 8 * ORIG_RAX, NULL);
         ptrace(PTRACE_GETREGS, pid, NULL, &regs);
-        /*char *syscall_args = get_syscalls(&regs);
-        printf("args: %s\n", syscall_args);
-        */
         /*
             printf("syscall: %ld: %s\nrdi: %lld\nrsi: %lld\nrdx: %lld\n, return
            " "value: (rax): %lld)\n", pt, syscalls[pt], regs.rdi, regs.rsi,
