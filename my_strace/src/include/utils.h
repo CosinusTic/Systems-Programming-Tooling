@@ -4,6 +4,7 @@
 #include <sys/types.h>
 
 void read_strmem(pid_t child, unsigned long addr, char *buffer, size_t max_len);
-char *handle_open_flags(int flag);
+char *map_access_mode(int flags);
+char *map_dirfd(int flag);
 
 #endif /* !UTILS_H */

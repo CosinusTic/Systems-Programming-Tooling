@@ -5,7 +5,7 @@
 void handle_open(struct user_regs_struct *regs, pid_t pid)
 {
     char path[256] = { 0 };
-    char *flag = handle_open_flags(regs->rsi);
+    char *flag = map_access_mode(regs->rsi);
     read_strmem(pid, regs->rdi, path, sizeof(path));
 
     printf("open(pathname=%s, flags=%s, mode=0%llo)\n", path, flag, regs->rdx);
@@ -13,13 +13,15 @@ void handle_open(struct user_regs_struct *regs, pid_t pid)
 
 void handle_openat(struct user_regs_struct *regs, pid_t pid)
 {
-    int dirfd = regs->rdi;
+    // int dirfd = regs->rdi;
+    char *dirfd = map_dirfd(regs->rdi);
     char pathbuf[256] = { 0 };
     read_strmem(pid, regs->rsi, pathbuf, sizeof(pathbuf));
-    int flags = regs->rdx;
+    // int flags = regs->rdx;
+    char *flags = map_access_mode(regs->rdx);
     mode_t mode = regs->r12;
 
-    printf("openat(dirfd=%d, pathname=%s, flags=%d, mode=%d)", dirfd, pathbuf,
+    printf("openat(dirfd=%s, pathname=%s, flags=%s, mode=%d)", dirfd, pathbuf,
            flags, mode);
 }
 
