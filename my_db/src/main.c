@@ -1,0 +1,79 @@
+#include <asm/unistd.h>
+#include <asm/unistd_64.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/ptrace.h>
+#include <sys/reg.h>
+#include <sys/syscall.h>
+#include <sys/user.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+int main(int argc, char *argv[], char *envp[])
+{
+    if (argc != 2)
+        return 1;
+
+    int status = 0;
+    long pt = 0;
+    struct user_regs_struct regs = { 0 };
+    int pid = fork();
+
+    switch (pid)
+    {
+    case -1:
+        return 2;
+
+    case 0: // child
+        ptrace(PTRACE_TRACEME, 0, NULL, NULL);
+        execve(argv[1], argv + 1, envp);
+
+    default:
+        break;
+    }
+
+    char command[100];
+
+    while (1)
+    {
+        pid_t w = waitpid(pid, &status, 0);
+        if (w == -1)
+            perror("Error on waitpid");
+
+        if (WIFEXITED(status)) // Exit from child program
+        {
+            int code = WEXITSTATUS(status);
+            printf("Program exited with code %d\n", code);
+            break;
+        }
+        pt = ptrace(PTRACE_PEEKUSER, pid, 8 * ORIG_RAX, NULL); // syscall no
+        ptrace(PTRACE_GETREGS, pid, NULL, &regs);
+        printf("Syscall: %ld\n", pt);
+        printf("PID: %d\n", pid);
+
+        if (fgets(command, sizeof(command), stdin))
+        {
+            command[strcspn(command, "\n")] = '\0';
+            if (strcmp(command, "break") == 0)
+            {
+                puts("Break command");
+            }
+            else if (strcmp(command, "next") == 0)
+            {
+                puts("next command");
+            }
+            else if (strcmp(command, "continue") == 0)
+            {
+                puts("continue command");
+            }
+            else if (strcmp(command, "registers") == 0)
+            {
+                puts("Registers command");
+            }
+        }
+    }
+
+    return 0;
+}
