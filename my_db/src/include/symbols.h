@@ -24,5 +24,6 @@ struct sym_llist *create_node(struct sym_data *data);
 void insert_node(struct sym_llist **head, struct sym_llist *new_node);
 void free_list(struct sym_llist *head);
 void sym_llist_traversal(struct sym_llist *head);
+unsigned long lookup_symbol_address(struct sym_llist *head, const char *name);
 
 #endif /* !SYMBOLS_H */

@@ -16,9 +16,6 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    puts("File is of ELF format");
-    puts("-- Starting parsing sequence of program headers");
-
     struct sym_llist *symlist = parse_elf_symbols(f);
     sym_llist_traversal(symlist);
 

@@ -15,5 +15,5 @@ int main(void)
     func1();
     func2();
 
-    return 1;
+    return 0;
 }
