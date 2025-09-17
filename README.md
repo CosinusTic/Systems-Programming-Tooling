@@ -28,9 +28,10 @@ This project gathers 3 systems programming tooling projects programmed in C that
 ├── README.md
 └── TODO.md
 ```
-### Structure
 
-## Section
+
+## Setup
+Everything is ready-to-use, simple navigate to sub-directories and call `make` or `make all` in order to build the projects, then refer to sub-readmes to know how to test them.
 
 ### AUTHORS
 - Nathan Delmarche
